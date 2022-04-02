@@ -1,0 +1,32 @@
+---
+name: TestNet CC Bridge federator
+
+on:
+  push:
+    release: Deploy TestNet CC Bridge federator
+      types: [published]
+jobs:
+  deploy:
+    name: Deploy 
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.TESTNET_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.TESTNET_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.TESTNET_AWS_REGION }} 
+
+      - name: Run locally the ansible playbook to deploy TestNet CC Bridge.
+        run: |
+          aws ssm send-command \
+          --document-name "AWS-RunShellScript" \
+          --document-version "1" \
+          --targets '[{"Key":"InstanceIds","Values":["${{ secrets.TESTNET_FEDERATOR_NODE }}"]}]' \
+          --parameters '{"workingDirectory":["/home/ubuntu/ansible/"],"executionTimeout":["3600"],"commands":["sudo -u ubuntu ansible-playbook deploy-ccbridge.yml"]}' \
+          --timeout-seconds 600 \
+          --max-concurrency "50" \
+          --max-errors "0" \
+          --region us-west-2 \
+          --output text \
